@@ -1,19 +1,17 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Tic-Tac-Toe Game
-
 Globals:
-    Api:
-        Cors:
-            AllowMethods: "'GET,POST,OPTIONS'"
-            AllowHeaders: "'content-type'"
-            AllowOrigin: "'*'"
-                   
+  Api:
+    Cors:
+      AllowMethods: '''GET,POST,OPTIONS'''
+      AllowHeaders: '''content-type'''
+      AllowOrigin: '''*'''
 Resources:
   TicTacToeFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: backend/
+      CodeUri: TicTacToeFunction
       Handler: index.handler
       Runtime: nodejs18.x
       Events:
@@ -22,7 +20,8 @@ Resources:
           Properties:
             Path: /play
             Method: post
-
+    Metadata:
+      SamResourceId: TicTacToeFunction
   TicTacToeWebsite:
     Type: AWS::S3::Bucket
     Properties:
@@ -31,26 +30,32 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-
   CloudFrontOAI:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
       CloudFrontOriginAccessIdentityConfig:
         Comment: OAI for TicTacToe website
-
   TicTacToeBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref TicTacToeWebsite
+      Bucket:
+        Ref: TicTacToeWebsite
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Effect: Allow
-            Principal:
-              CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
-            Action: s3:GetObject
-            Resource: !Join ['', ['arn:aws:s3:::', !Ref TicTacToeWebsite, '/*']]
-
+        - Effect: Allow
+          Principal:
+            CanonicalUser:
+              Fn::GetAtt:
+              - CloudFrontOAI
+              - S3CanonicalUserId
+          Action: s3:GetObject
+          Resource:
+            Fn::Join:
+            - ''
+            - - 'arn:aws:s3:::'
+              - Ref: TicTacToeWebsite
+              - /*
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -64,18 +69,22 @@ Resources:
           MaxTTL: 0
           ForwardedValues:
             QueryString: false
-          # Add these lines
-          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad  # CachingDisabled policy
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
         Enabled: true
         HttpVersion: http2
         Origins:
-          - DomainName: !GetAtt TicTacToeWebsite.RegionalDomainName
-            Id: S3Origin
-            S3OriginConfig:
-              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOAI}"
-
+        - DomainName:
+            Fn::GetAtt:
+            - TicTacToeWebsite
+            - RegionalDomainName
+          Id: S3Origin
+          S3OriginConfig:
+            OriginAccessIdentity:
+              Fn::Sub: origin-access-identity/cloudfront/${CloudFrontOAI}
 Outputs:
-  # Update WebsiteURL output
   WebsiteURL:
-    Description: "CloudFront distribution domain name"
-    Value: !GetAtt CloudFrontDistribution.DomainName
+    Description: CloudFront distribution domain name
+    Value:
+      Fn::GetAtt:
+      - CloudFrontDistribution
+      - DomainName

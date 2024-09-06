@@ -1,9 +1,0 @@
-{
-    "name": "tic-tac-toe-lambda",
-    "version": "1.0.0",
-    "description": "Tic Tac Toe game for AWS Lambda",
-    "main": "index.js",
-    "dependencies": {
-      "aws-sdk": "^2.1001.0"
-    }
-  }
