@@ -4,6 +4,7 @@ const resetButton = document.getElementById('reset');
 const difficultyInputs = document.querySelectorAll('input[name="difficulty"]');
 
 let gameBoard = Array(9).fill(' ');
+let gameEnded = false;
 
 function createBoard() {
     board.innerHTML = '';
@@ -17,6 +18,7 @@ function createBoard() {
 }
 
 function handleCellClick(event) {
+    if (gameEnded) return;
     const index = event.target.dataset.index;
     if (gameBoard[index] === ' ') {
         makeMove(index);
@@ -35,7 +37,7 @@ async function makeMove(index) {
     });
     const data = await response.json();
     updateBoard(data.board);
-    message.textContent = data.message;
+    updateMessage(data.message);
 }
 
 function updateBoard(newBoard) {
@@ -46,10 +48,26 @@ function updateBoard(newBoard) {
     });
 }
 
+function updateMessage(newMessage) {
+    message.textContent = newMessage;
+    if (newMessage.includes("win")) {
+        gameEnded = true;
+        message.style.color = "green";
+    } else if (newMessage.includes("lost")) {
+        gameEnded = true;
+        message.style.color = "red";
+    } else if (newMessage.includes("tie")) {
+        gameEnded = true;
+        message.style.color = "black";
+    }
+}
+
 function resetGame() {
     gameBoard = Array(9).fill(' ');
+    gameEnded = false;
     updateBoard(gameBoard);
     message.textContent = '';
+    message.style.color = "black";
 }
 
 createBoard();

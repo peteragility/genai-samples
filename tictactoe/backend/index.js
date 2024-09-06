@@ -26,7 +26,7 @@ exports.handler = async (event) => {
             board[computerMove] = 'O';
             if (checkWinner(board, 'O')) {
                 games.delete(sessionId); // End the game
-                return response("Computer wins!", board);
+                return response("You lost!", board);
             }
             if (isBoardFull(board)) {
                 games.delete(sessionId); // End the game

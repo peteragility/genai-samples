@@ -5,54 +5,133 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tic-Tac-Toe</title>
     <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --background-color: #ecf0f1;
+            --text-color: #2c3e50;
+            --cell-size: 100px;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
         }
-        .board {
-            display: grid;
-            grid-template-columns: repeat(3, 100px);
-            gap: 5px;
-            margin: 20px 0;
-        }
-        .cell {
-            width: 100px;
-            height: 100px;
-            font-size: 2em;
+
+        .container {
             text-align: center;
-            vertical-align: middle;
-            line-height: 100px;
-            border: 1px solid black;
+            padding: 20px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .difficulty {
+            margin-bottom: 20px;
+        }
+
+        .difficulty label {
+            margin: 0 10px;
             cursor: pointer;
         }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px auto;
+            max-width: 320px;
+        }
+
+        .cell {
+            width: 100%;
+            aspect-ratio: 1;
+            font-size: 2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: white;
+            border: 2px solid var(--primary-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .cell:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
         #message {
             font-size: 1.2em;
             font-weight: bold;
-            margin: 10px 0;
+            margin: 20px 0;
+            min-height: 1.5em;
         }
+
         #reset {
             font-size: 1em;
             padding: 10px 20px;
             cursor: pointer;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        #reset:hover {
+            background-color: #27ae60;
+        }
+
+        .game-won .cell {
+            background-color: rgba(46, 204, 113, 0.2);
+        }
+
+        .game-lost .cell {
+            background-color: rgba(231, 76, 60, 0.2);
+        }
+
+        @media (max-width: 500px) {
+            .container {
+                padding: 10px;
+            }
+
+            .board {
+                max-width: 280px;
+            }
+
+            .cell {
+                font-size: 1.5em;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Tic-Tac-Toe</h1>
-    <div>
-        <label>
-            <input type="radio" name="difficulty" value="easy" checked> Easy
-        </label>
-        <label>
-            <input type="radio" name="difficulty" value="hard"> Hard
-        </label>
+    <div class="container">
+        <h1>Tic-Tac-Toe</h1>
+        <div class="difficulty">
+            <label>
+                <input type="radio" name="difficulty" value="easy" checked> Easy
+            </label>
+            <label>
+                <input type="radio" name="difficulty" value="hard"> Hard
+            </label>
+        </div>
+        <div class="board" id="board"></div>
+        <p id="message"></p>
+        <button id="reset">Reset Game</button>
     </div>
-    <div class="board" id="board"></div>
-    <p id="message"></p>
-    <button id="reset">Reset Game</button>
 
     <script src="app.js"></script>
 </body>
