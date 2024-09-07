@@ -16,6 +16,7 @@ Resources:
       CodeUri: backend/
       Handler: index.handler
       Runtime: nodejs18.x
+      MemorySize: 256
       Policies:
         - CloudWatchLambdaInsightsExecutionRolePolicy
         - AWSLambdaBasicExecutionRole
