@@ -1,8 +1,8 @@
 version = 0.1
 [default.deploy.parameters]
-stack_name = "tictactoe-app"
+stack_name = "tictactoe-5x5-app"
 resolve_s3 = true
-s3_prefix = "tictactoe-app"
+s3_prefix = "tictactoe-5x5-app"
 region = "ap-east-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"

@@ -6,7 +6,7 @@ Globals:
     Api:
         Cors:
             AllowMethods: "'GET,POST,OPTIONS'"
-            AllowHeaders: "'content-type'"
+            AllowHeaders: "'Content-Type,X-Session-Id'"
             AllowOrigin: "'*'"
                    
 Resources:
@@ -16,6 +16,9 @@ Resources:
       CodeUri: backend/
       Handler: index.handler
       Runtime: nodejs18.x
+      Policies:
+        - CloudWatchLambdaInsightsExecutionRolePolicy
+        - AWSLambdaBasicExecutionRole
       Events:
         TicTacToeAPI:
           Type: Api

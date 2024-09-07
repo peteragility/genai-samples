@@ -3,136 +3,184 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic-Tac-Toe</title>
+    <title>Gomoku</title>
     <style>
         :root {
             --primary-color: #3498db;
             --secondary-color: #2ecc71;
             --background-color: #ecf0f1;
             --text-color: #2c3e50;
-            --cell-size: 100px;
         }
-
-        body {
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+        * {
+            box-sizing: border-box;
             margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: Arial, sans-serif;
             background-color: var(--background-color);
             color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 10px;
         }
-
-        .container {
+        .header {
             text-align: center;
-            padding: 20px;
-            max-width: 500px;
-            width: 100%;
+            margin-bottom: 10px;
         }
-
         h1 {
-            color: var(--primary-color);
-            margin-bottom: 20px;
+            font-size: 28px;
+            margin-bottom: 10px;
         }
-
-        .difficulty {
-            margin-bottom: 20px;
+        #message {
+            font-weight: bold;
+            font-size: 24px;
+            margin-top: 5px;
         }
-
-        .difficulty label {
-            margin: 0 10px;
-            cursor: pointer;
+        #message.win { color: #4CAF50; }
+        #message.lose { color: #F44336; }
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 20px;
         }
-
+        .rules {
+            position: relative;
+        }
+        .rules-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            z-index: 1;
+            width: 300px;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .rules-content.show {
+            display: block;
+        }
+        .board-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
         .board {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin: 20px auto;
-            max-width: 320px;
-        }
-
-        .cell {
+            grid-template-columns: repeat(15, 1fr);
+            gap: 1px;
+            background-color: #d4a56a;
+            padding: 5px;
+            border-radius: 5px;
             width: 100%;
-            aspect-ratio: 1;
-            font-size: 2em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: white;
-            border: 2px solid var(--primary-color);
-            border-radius: 10px;
+            height: 100%;
+            max-width: 95vmin;
+            max-height: 95vmin;
+            aspect-ratio: 1 / 1;
+        }
+        .cell {
+            background-color: #e6bf83;
+            position: relative;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            aspect-ratio: 1 / 1;
         }
-
-        .cell:hover {
-            background-color: rgba(52, 152, 219, 0.1);
+        .cell::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 90%;
+            height: 90%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
         }
-
-        #message {
-            font-size: 1.2em;
-            font-weight: bold;
-            margin: 20px 0;
-            min-height: 1.5em;
+        .cell.black::before { 
+            background: radial-gradient(circle at 30% 30%, #444, #000);
+            box-shadow: 
+                inset 0 0 15px rgba(255,255,255,0.3),
+                0 5px 10px rgba(0,0,0,0.5);
         }
-
-        #reset {
-            font-size: 1em;
+        .cell.white::before {
+            background: radial-gradient(circle at 30% 30%, #fff, #f0f0f0);
+            box-shadow: 
+                inset 0 0 15px rgba(0,0,0,0.1),
+                0 5px 10px rgba(0,0,0,0.2);
+        }
+        .cell.winning { animation: flash 1s infinite alternate; }
+        .cell.winning-green::before { 
+            background: radial-gradient(circle at 30% 30%, #4CAF50, #45a049);
+            box-shadow: 
+                inset 0 0 15px rgba(255,255,255,0.5),
+                0 5px 10px rgba(0,0,0,0.3);
+        }
+        .cell.winning-red::before { 
+            background: radial-gradient(circle at 30% 30%, #F44336, #d32f2f);
+            box-shadow: 
+                inset 0 0 15px rgba(255,255,255,0.5),
+                0 5px 10px rgba(0,0,0,0.3);
+        }
+        @keyframes flash {
+            from { opacity: 1; }
+            to { opacity: 0.8; }
+        }
+        .btn-rules {
             padding: 10px 20px;
-            cursor: pointer;
+            font-size: 16px;
             background-color: var(--secondary-color);
             color: white;
             border: none;
             border-radius: 5px;
-            transition: background-color 0.3s ease;
+            cursor: pointer;
         }
-
-        #reset:hover {
-            background-color: #27ae60;
+        .btn-rules:hover { background-color: #27ae60; }
+        .btn-new-game {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
-
-        .game-won .cell {
-            background-color: rgba(46, 204, 113, 0.2);
-        }
-
-        .game-lost .cell {
-            background-color: rgba(231, 76, 60, 0.2);
-        }
-
-        @media (max-width: 500px) {
-            .container {
-                padding: 10px;
-            }
-
-            .board {
-                max-width: 280px;
-            }
-
-            .cell {
-                font-size: 1.5em;
-            }
-        }
+        .btn-new-game:hover { background-color: #2980b9; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Tic-Tac-Toe</h1>
-        <div class="difficulty">
-            <label>
-                <input type="radio" name="difficulty" value="easy" checked> Easy
-            </label>
-            <label>
-                <input type="radio" name="difficulty" value="hard"> Hard
-            </label>
-        </div>
-        <div class="board" id="board"></div>
+    <div class="header">
+        <h1>Gomoku</h1>
         <p id="message"></p>
-        <button id="reset">Reset Game</button>
     </div>
-
+    <div class="controls">
+        <div class="rules">
+            <button class="btn-rules" id="rulesBtn">Rules</button>
+            <div class="rules-content" id="rulesContent">
+                <h3>Rules:</h3>
+                <ul>
+                    <li>Players take turns placing a stone of their color on an empty intersection.</li>
+                    <li>Black plays first.</li>
+                    <li>The winner is the first player to form an unbroken chain of five stones horizontally, vertically, or diagonally.</li>
+                    <li>If the board fills up with no winner, the game is a draw.</li>
+                </ul>
+            </div>
+        </div>
+        <button class="btn-new-game" id="reset">New Game</button>
+    </div>
+    <div class="board-container">
+        <div class="board" id="board"></div>
+    </div>
     <script src="app.js"></script>
+    <script>
+        document.getElementById('rulesBtn').addEventListener('click', function() {
+            document.getElementById('rulesContent').classList.toggle('show');
+        });
+    </script>
 </body>
 </html>

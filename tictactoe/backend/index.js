@@ -1,145 +1,177 @@
-// Use a Map to store game states for different sessions
 const games = new Map();
 
 exports.handler = async (event) => {
     const body = JSON.parse(event.body);
     const playerMove = body.move !== undefined ? parseInt(body.move) : null;
-    const difficulty = body.difficulty || 'easy';
-    const sessionId = event.requestContext.requestId; // Use request ID as session ID
+    const sessionId = event.headers['x-session-id'] || event.requestContext.requestId;
 
-    // Get the board state from the request or create a new one
-    let board = body.board || Array(9).fill(' ');
+    let board = body.board || games.get(sessionId) || Array(225).fill(' ');
 
-    if (playerMove !== null) {
-        if (isValidMove(board, playerMove)) {
-            board[playerMove] = 'X';
-            if (checkWinner(board, 'X')) {
-                games.delete(sessionId); // End the game
-                return response("You win!", board);
-            }
-            if (isBoardFull(board)) {
-                games.delete(sessionId); // End the game
-                return response("It's a tie!", board);
-            }
-            
-            const computerMove = difficulty === 'hard' ? getHardComputerMove(board) : getEasyComputerMove(board);
-            board[computerMove] = 'O';
-            if (checkWinner(board, 'O')) {
-                games.delete(sessionId); // End the game
-                return response("You lost!", board);
-            }
-            if (isBoardFull(board)) {
-                games.delete(sessionId); // End the game
-                return response("It's a tie!", board);
-            }
-        } else {
-            return response("Invalid move. Try again.", board);
+    if (playerMove !== null && isValidMove(board, playerMove)) {
+        board[playerMove] = 'X';
+        
+        if (checkWinnerOptimized(board, playerMove, 'X')) {
+            games.delete(sessionId);
+            return response("You win!", board, getWinningLine(board, playerMove, 'X'));
         }
+        
+        if (isBoardFull(board)) {
+            games.delete(sessionId);
+            return response("It's a tie!", board);
+        }
+        
+        const computerMove = getComputerMoveOptimized(board);
+        board[computerMove] = 'O';
+        
+        if (checkWinnerOptimized(board, computerMove, 'O')) {
+            games.delete(sessionId);
+            return response("You lost!", board, getWinningLine(board, computerMove, 'O'));
+        }
+        
+        if (isBoardFull(board)) {
+            games.delete(sessionId);
+            return response("It's a tie!", board);
+        }
+    } else if (playerMove !== null) {
+        return response("Invalid move. Try again.", board);
     }
     
-    // Save the updated board state
     games.set(sessionId, board);
-    
-    return response(`Current board: ${board.join(' ')}`, board);
+    return response(`Make your move`, board);
 };
 
 function isValidMove(board, move) {
-    return move >= 0 && move < 9 && board[move] === ' ';
+    return move >= 0 && move < 225 && board[move] === ' ';
 }
 
 function isBoardFull(board) {
     return !board.includes(' ');
 }
 
-function checkWinner(board, player) {
-    const winningCombinations = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8],
-        [0, 3, 6], [1, 4, 7], [2, 5, 8],
-        [0, 4, 8], [2, 4, 6]
-    ];
-    return winningCombinations.some(combo => 
-        combo.every(index => board[index] === player)
-    );
+function checkWinnerOptimized(board, lastMove, player) {
+    const directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
+    const x = lastMove % 15;
+    const y = Math.floor(lastMove / 15);
+
+    for (const [dx, dy] of directions) {
+        let count = 1;
+        for (let i = 1; i < 5; i++) {
+            const newX = x + dx * i;
+            const newY = y + dy * i;
+            if (newX < 0 || newX >= 15 || newY < 0 || newY >= 15 || board[newY * 15 + newX] !== player) break;
+            count++;
+        }
+        for (let i = 1; i < 5; i++) {
+            const newX = x - dx * i;
+            const newY = y - dy * i;
+            if (newX < 0 || newX >= 15 || newY < 0 || newY >= 15 || board[newY * 15 + newX] !== player) break;
+            count++;
+        }
+        if (count >= 5) return true;
+    }
+    return false;
 }
 
-function getEasyComputerMove(board) {
-    const emptyCells = board.reduce((acc, cell, index) => {
+function getWinningLine(board, lastMove, player) {
+    const directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
+    const x = lastMove % 15;
+    const y = Math.floor(lastMove / 15);
+
+    for (const [dx, dy] of directions) {
+        let line = [lastMove];
+        for (let i = 1; i < 5; i++) {
+            const newX = x + dx * i;
+            const newY = y + dy * i;
+            if (newX < 0 || newX >= 15 || newY < 0 || newY >= 15 || board[newY * 15 + newX] !== player) break;
+            line.push(newY * 15 + newX);
+        }
+        for (let i = 1; i < 5; i++) {
+            const newX = x - dx * i;
+            const newY = y - dy * i;
+            if (newX < 0 || newX >= 15 || newY < 0 || newY >= 15 || board[newY * 15 + newX] !== player) break;
+            line.unshift(newY * 15 + newX);
+        }
+        if (line.length >= 5) return line.slice(0, 5);
+    }
+    return null;
+}
+
+function getComputerMoveOptimized(board) {
+    const emptySpots = board.reduce((acc, cell, index) => {
         if (cell === ' ') acc.push(index);
         return acc;
     }, []);
-    return emptyCells[Math.floor(Math.random() * emptyCells.length)];
-}
 
-function getHardComputerMove(board) {
-    return minimax(board, 'O').index;
-}
+    if (emptySpots.length === 225) {
+        return 112; // Center of the board
+    }
 
-function minimax(board, player) {
-    const availableSpots = getEmptyCells(board);
-    
-    if (checkWinner(board, 'X')) {
-        return { score: -10 };
-    } else if (checkWinner(board, 'O')) {
-        return { score: 10 };
-    } else if (availableSpots.length === 0) {
-        return { score: 0 };
-    }
-    
-    const moves = [];
-    
-    for (let i = 0; i < availableSpots.length; i++) {
-        const move = {};
-        move.index = availableSpots[i];
-        board[availableSpots[i]] = player;
-        
-        if (player === 'O') {
-            const result = minimax(board, 'X');
-            move.score = result.score;
-        } else {
-            const result = minimax(board, 'O');
-            move.score = result.score;
-        }
-        
-        board[availableSpots[i]] = ' ';
-        moves.push(move);
-    }
-    
-    let bestMove;
-    if (player === 'O') {
-        let bestScore = -Infinity;
-        for (let i = 0; i < moves.length; i++) {
-            if (moves[i].score > bestScore) {
-                bestScore = moves[i].score;
-                bestMove = i;
-            }
-        }
-    } else {
-        let bestScore = Infinity;
-        for (let i = 0; i < moves.length; i++) {
-            if (moves[i].score < bestScore) {
-                bestScore = moves[i].score;
-                bestMove = i;
-            }
+    let bestScore = -Infinity;
+    let bestMove = emptySpots[0];
+
+    for (const move of emptySpots) {
+        const score = evaluateMove(board, move);
+        if (score > bestScore) {
+            bestScore = score;
+            bestMove = move;
         }
     }
-    
-    return moves[bestMove];
+
+    return bestMove;
 }
 
-function getEmptyCells(board) {
-    return board.reduce((acc, cell, index) => {
-        if (cell === ' ') acc.push(index);
-        return acc;
-    }, []);
+function evaluateMove(board, move) {
+    const directions = [[1, 0], [0, 1], [1, 1], [1, -1]];
+    const x = move % 15;
+    const y = Math.floor(move / 15);
+    let score = 0;
+
+    for (const [dx, dy] of directions) {
+        score += evaluateDirection(board, x, y, dx, dy, 'O');
+        score += evaluateDirection(board, x, y, dx, dy, 'X');
+    }
+
+    return score;
 }
 
-function response(message, board) {
+function evaluateDirection(board, x, y, dx, dy, player) {
+    let score = 0;
+    let ownCount = 0;
+    let emptyCount = 0;
+    let blocked = false;
+
+    for (let i = -4; i <= 4; i++) {
+        const newX = x + dx * i;
+        const newY = y + dy * i;
+        if (newX < 0 || newX >= 15 || newY < 0 || newY >= 15) {
+            blocked = true;
+            break;
+        }
+        const cell = board[newY * 15 + newX];
+        if (cell === player) ownCount++;
+        else if (cell === ' ') emptyCount++;
+        else {
+            blocked = true;
+            break;
+        }
+    }
+
+    if (ownCount >= 4) score += 100000;
+    else if (ownCount === 3 && !blocked) score += 10000;
+    else if (ownCount === 2 && !blocked) score += 1000;
+    else if (ownCount === 1 && !blocked) score += 100;
+
+    return score;
+}
+
+function response(message, board, winningLine = null) {
     return {
         statusCode: 200,
         headers: {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type,X-Session-Id"
         },
-        body: JSON.stringify({ message, board })
+        body: JSON.stringify({ message, board, winningLine })
     };
 }
